@@ -2,8 +2,12 @@ package com.nosta.gpstrackercourse.fragments
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
+import android.location.LocationManager
 import android.os.Build
 import  android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.nosta.gpstrackercourse.R
 import com.nosta.gpstrackercourse.databinding.FragmentMainBinding
+import com.nosta.gpstrackercourse.utils.DialogManager
 import com.nosta.gpstrackercourse.utils.checkPermission
 import com.nosta.gpstrackercourse.utils.showToast
 import org.osmdroid.config.Configuration
@@ -29,15 +34,22 @@ class MainFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         settingsOsm()
+        Log.d("MyLog", "onCreateView")
         binding = FragmentMainBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("MyLog", "onResume")
+        checkLocPermission()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 //        initOSM()
+        Log.d("MyLog", "onViewCreated")
         registerPermission()
-        checkLocPermission()
     }
 
     private fun settingsOsm(){
@@ -66,6 +78,7 @@ class MainFragment : Fragment() {
             ActivityResultContracts.RequestMultiplePermissions()) {
             if (it[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
                 initOSM()
+                checkLocationEnabled()
             } else {
                 showToast("Вы не дали разрешения на использользование местоположения!")
             }
@@ -84,6 +97,7 @@ class MainFragment : Fragment() {
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)
             && checkPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
             initOSM()
+            checkLocationEnabled()
         } else {
             pLauncher.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -95,8 +109,27 @@ class MainFragment : Fragment() {
     private fun checkPermissionBefore10(){
         if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             initOSM()
+            checkLocationEnabled()
         } else {
             pLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
+        }
+    }
+
+    private fun checkLocationEnabled() {
+        val lManager = activity?.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val isEnabled = lManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        if (!isEnabled) {
+            DialogManager.showLocEnableDialog(
+                activity as AppCompatActivity,
+                object: DialogManager.Listener {
+                    override fun onClick() {
+                        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    }
+
+                }
+            )
+        } else {
+            showToast("Location enabled")
         }
     }
 
