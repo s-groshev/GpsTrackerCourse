@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.nosta.gpstrackercourse.R
 import com.nosta.gpstrackercourse.databinding.FragmentMainBinding
+import com.nosta.gpstrackercourse.location.LocationService
 import com.nosta.gpstrackercourse.utils.DialogManager
 import com.nosta.gpstrackercourse.utils.checkPermission
 import com.nosta.gpstrackercourse.utils.showToast
@@ -50,6 +51,11 @@ class MainFragment : Fragment() {
 //        initOSM()
         Log.d("MyLog", "onViewCreated")
         registerPermission()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            activity?.startForegroundService(Intent(activity, LocationService::class.java))
+        } else {
+            activity?.startService(Intent(activity, LocationService::class.java))
+        }
     }
 
     private fun settingsOsm(){
