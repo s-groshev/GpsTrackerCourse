@@ -15,10 +15,12 @@ import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
 import com.nosta.gpstrackercourse.R
 import com.nosta.gpstrackercourse.databinding.FragmentMainBinding
 import com.nosta.gpstrackercourse.location.LocationService
 import com.nosta.gpstrackercourse.utils.DialogManager
+import com.nosta.gpstrackercourse.utils.TimeUtils
 import com.nosta.gpstrackercourse.utils.checkPermission
 import com.nosta.gpstrackercourse.utils.showToast
 import org.osmdroid.config.Configuration
@@ -26,8 +28,13 @@ import org.osmdroid.library.BuildConfig
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.util.*
 
 class MainFragment : Fragment() {
+    private var isServiceRunning = false
+    private var timer: Timer? = null
+    private var startTime = 0L
+    private val timeData = MutableLiveData<String>()
     private lateinit var pLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var binding: FragmentMainBinding
     override fun onCreateView(
@@ -51,11 +58,73 @@ class MainFragment : Fragment() {
 //        initOSM()
         Log.d("MyLog", "onViewCreated")
         registerPermission()
+        setOnClicks()
+        checkServiceState()
+        updateTime()
+    }
+
+    private fun setOnClicks() = with(binding) {
+        val listener = onClicks()
+        fStartStop.setOnClickListener(listener)
+    }
+
+    private fun onClicks(): View.OnClickListener {
+        return View.OnClickListener {
+            when(it.id) {
+                R.id.fStartStop -> startStopService()
+            }
+        }
+    }
+
+    private fun updateTime() {
+        timeData.observe(viewLifecycleOwner) {
+            binding.tvTime.text = it
+        }
+    }
+
+    private fun startTimer() {
+        timer?.cancel()
+        timer = Timer()
+        startTime = System.currentTimeMillis()
+        timer?.schedule(object : TimerTask() {
+            override fun run() {
+                activity?.runOnUiThread{
+                    timeData.value = getCurrentTime()
+                }
+            }
+        },1,1)
+    }
+
+    private fun getCurrentTime(): String {
+        return "Time: ${TimeUtils.getTime(System.currentTimeMillis() - startTime)}"
+    }
+
+    private fun startStopService() {
+        if (!isServiceRunning) {
+            startLocService()
+        } else {
+            activity?.stopService(Intent(activity, LocationService::class.java))
+            binding.fStartStop.setImageResource(R.drawable.ic_play)
+            timer?.cancel()
+        }
+        isServiceRunning = !isServiceRunning
+    }
+
+    private fun checkServiceState() {
+        isServiceRunning = LocationService.isRunning
+        if (isServiceRunning) {
+            binding.fStartStop.setImageResource(R.drawable.ic_stop)
+        }
+    }
+
+    private fun startLocService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             activity?.startForegroundService(Intent(activity, LocationService::class.java))
         } else {
             activity?.startService(Intent(activity, LocationService::class.java))
         }
+        binding.fStartStop.setImageResource(R.drawable.ic_stop)
+        startTimer()
     }
 
     private fun settingsOsm(){
