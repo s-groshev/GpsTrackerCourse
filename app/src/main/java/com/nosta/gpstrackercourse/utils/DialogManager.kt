@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.LayoutInflater
-import android.widget.Toast
 import com.nosta.gpstrackercourse.R
 import com.nosta.gpstrackercourse.databinding.SaveDialogBinding
 import com.nosta.gpstrackercourse.db.TrackItem
@@ -31,7 +30,7 @@ object DialogManager {
         val dialog = builder.create()
         binding.apply {
             tvTime2.text = "${item?.time} "
-            tvSpeed.text = "${item?.velocity} km/h"
+            tvSpeed.text = "${item?.speed} km/h"
             tvDistance2.text = "${item?.distance} km"
             bSave.setOnClickListener {
                 listener.onClick()

@@ -19,8 +19,8 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.MutableLiveData
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.nosta.gpstrackercourse.MainApp
 import com.nosta.gpstrackercourse.MainViewModel
 import com.nosta.gpstrackercourse.R
 import com.nosta.gpstrackercourse.databinding.FragmentMainBinding
@@ -40,7 +40,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
 class MainFragment : Fragment() {
-    private var trackItem: TrackItem? = null
+    private var locationModel: LocationModel? = null
     private var pl: Polyline? = null
     private var isServiceRunning = false
     private var firstStart = true
@@ -48,7 +48,9 @@ class MainFragment : Fragment() {
     private var startTime = 0L
     private lateinit var pLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var binding: FragmentMainBinding
-    private val model: MainViewModel by activityViewModels()
+    private val model: MainViewModel by activityViewModels{
+        MainViewModel.ViewModeFactory((requireContext().applicationContext as MainApp).database)
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -75,6 +77,9 @@ class MainFragment : Fragment() {
         updateTime()
         registerLocReceiver()
         locationUpdates()
+//        model.tracks.observe(viewLifecycleOwner){
+//            Log.d("MyLog", "List size: ${it.size}")
+//        }
     }
 
     private fun setOnClicks() = with(binding) {
@@ -98,14 +103,15 @@ class MainFragment : Fragment() {
             tvDistance.text = distance
             tvVelocity.text = velocity
             tvAverageVel.text = aVelocity
-            trackItem = TrackItem(
-                null,
-                getCurrentTime(),
-                TimeUtils.getDate(),
-                String.format("%.1f", it.distance / 1000),
-                getAverageSpeed(it.distance),
-                ""
-            )
+//            trackItem = TrackItem(
+//                null,
+//                getCurrentTime(),
+//                TimeUtils.getDate(),
+//                String.format("%.1f", it.distance / 1000),
+//                getAverageSpeed(it.distance),
+//                geoPointsToString(it.geoPointList)
+//            )
+            locationModel = it
             updatePolyline(it.geoPointList)
         }
     }
@@ -138,6 +144,15 @@ class MainFragment : Fragment() {
         return "Time: ${TimeUtils.getTime(System.currentTimeMillis() - startTime)}"
     }
 
+    private fun geoPointsToString(list: List<GeoPoint>): String{
+        val sb = java.lang.StringBuilder()
+        list.forEach {
+            sb.append("${it.latitude},${it.longitude}/")
+        }
+        Log.d("MyLog","Points: $sb")
+        return sb.toString()
+    }
+
     private fun startStopService() {
         if (!isServiceRunning) {
             startLocService()
@@ -145,16 +160,29 @@ class MainFragment : Fragment() {
             activity?.stopService(Intent(activity, LocationService::class.java))
             binding.fStartStop.setImageResource(R.drawable.ic_play)
             timer?.cancel()
+            val track = getTrackItem()
             DialogManager.showSaveDialog(requireContext(),
-                trackItem,
+                track,
                 object : DialogManager.Listener{
                 override fun onClick() {
                     showToast("Track Saved!")
+                    model.insertTrack(track)
                 }
 
             })
         }
         isServiceRunning = !isServiceRunning
+    }
+
+    private fun getTrackItem(): TrackItem {
+        return TrackItem(
+            null,
+            getCurrentTime(),
+            TimeUtils.getDate(),
+            String.format("%.1f", locationModel?.distance?.div(1000) ?: 0),
+            getAverageSpeed(locationModel?.distance ?: 0.0f),
+            geoPointsToString(locationModel?.geoPointList ?: listOf())
+        )
     }
 
     private fun checkServiceState() {

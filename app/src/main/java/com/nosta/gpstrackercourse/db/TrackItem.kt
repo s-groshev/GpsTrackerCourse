@@ -11,11 +11,11 @@ data class TrackItem(
     @ColumnInfo(name = "time")
     val time: String,
     @ColumnInfo(name = "date")
-    val date: String,
+    val data: String,
     @ColumnInfo(name = "distance")
     val distance: String,
     @ColumnInfo(name = "velocity")
-    val velocity: String,
+    val speed: String,
     @ColumnInfo(name = "geo_points")
     val geoPoints: String,
 )
