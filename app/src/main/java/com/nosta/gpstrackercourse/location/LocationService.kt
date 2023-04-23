@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import com.google.android.gms.location.*
 import com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY
 import com.nosta.gpstrackercourse.MainActivity
@@ -28,6 +29,8 @@ class LocationService : Service() {
     private lateinit var locProvider: FusedLocationProviderClient
     private lateinit var locRequest: LocationRequest
     private lateinit var geoPointList: ArrayList<GeoPoint>
+    // это значение для калибровки gps компаса
+    private val isDebug = true
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -59,8 +62,11 @@ class LocationService : Service() {
             val currentLocation = lResult.lastLocation
             if (lastLocation != null && currentLocation != null) {
 //                if (currentLocation.speed > 0.2)
+                if (currentLocation.speed > 0.4 || isDebug) {
+                    Log.d("MyLog","Is emulator: ${isDebug}")
                     distance += lastLocation?.distanceTo((currentLocation))!!
-                geoPointList.add(GeoPoint(currentLocation.latitude, currentLocation.longitude))
+                    geoPointList.add(GeoPoint(currentLocation.latitude, currentLocation.longitude))
+                }
                 val locModel = LocationModel(
                     currentLocation.speed,
                     distance,
@@ -110,11 +116,15 @@ class LocationService : Service() {
     }
 
     private fun initLocation(){
+        val updeteInterval = PreferenceManager.getDefaultSharedPreferences(
+            this
+        ).getString("update_time_key", "3000")?.toLong() ?: 3000
         locRequest = LocationRequest.create()
-        locRequest.interval = 5000
-        locRequest.fastestInterval = 5000
+        locRequest.interval = updeteInterval
+        locRequest.fastestInterval = updeteInterval
         locRequest.priority = PRIORITY_HIGH_ACCURACY
         locProvider = LocationServices.getFusedLocationProviderClient(baseContext)
+        Log.d("MyLog","UpdateInterval ${updeteInterval}")
     }
 
     private fun startLocationUpdates() {
