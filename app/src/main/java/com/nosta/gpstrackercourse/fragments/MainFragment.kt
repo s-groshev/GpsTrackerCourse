@@ -83,6 +83,14 @@ class MainFragment : Fragment() {
 //        model.tracks.observe(viewLifecycleOwner){
 //            Log.d("MyLog", "List size: ${it.size}")
 //        }
+        model.insertTrack(TrackItem(
+            null,
+            getCurrentTime(),
+            TimeUtils.getDate(),
+            "100",
+            "123",
+            "55.7661045,37.6839024/"
+        ))
     }
 
     private fun setOnClicks() = with(binding) {
