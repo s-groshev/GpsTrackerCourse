@@ -3,6 +3,7 @@ package com.nosta.gpstrackercourse.fragments
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,6 +27,7 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 
 class ViewTrackFragment : Fragment() {
+    private var marker: Marker? = null
     private var mgr: CacheManager? = null
     private var startPoint: GeoPoint? = null
     private lateinit var binding: ViewTrackBinding
@@ -67,6 +69,21 @@ class ViewTrackFragment : Fragment() {
 //            Configuration.getInstance().tileFileSystemCacheMaxBytes = 999999999;
 //            Configuration.getInstance().osmdroidTileCache = File("asd");
             showToast(info)
+            mRotationGestureOverlay.isEnabled = !mRotationGestureOverlay.isEnabled
+            binding.map.setMultiTouchControls(mRotationGestureOverlay.isEnabled);
+//            binding.map.setScrollableAreaLimitLatitude(
+//                binding.map.boundingBox.latNorth,
+//                binding.map.boundingBox.latSouth,
+//                binding.map.getHeight() / 2
+//            )
+            if (binding.map.isScrollableAreaLimitLatitude || binding.map.isScrollableAreaLimitLongitude) {
+//                binding.map.resetScrollableAreaLimitLongitude();
+//                binding.map.resetScrollableAreaLimitLatitude();
+                binding.map.setScrollableAreaLimitDouble(null)
+            } else {
+                binding.map.setScrollableAreaLimitDouble(binding.map.boundingBox)
+            }
+            Log.d("myLog", binding.map.isScrollableAreaLimitLatitude.toString())
         }
     }
 
@@ -117,6 +134,7 @@ class ViewTrackFragment : Fragment() {
 //            """.trimIndent()
         map.overlays.add(startMarker)
         map.overlays.add(finishMarker)
+        marker = startMarker;
     }
     private fun getPolyline(geoPoint: String): Polyline {
         val polyline = Polyline()
