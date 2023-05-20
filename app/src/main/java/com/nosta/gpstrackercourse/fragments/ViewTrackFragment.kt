@@ -1,7 +1,9 @@
 package com.nosta.gpstrackercourse.fragments
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -25,6 +27,7 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import java.io.File
 
 class ViewTrackFragment : Fragment() {
     private var marker: Marker? = null
@@ -66,6 +69,7 @@ class ViewTrackFragment : Fragment() {
                     "\n Cache freeSpace: " + Configuration.getInstance().getOsmdroidTileCache().freeSpace +
                     "\n ThreadsDownload: " + Configuration.getInstance().tileFileSystemThreads +
                     "\n QueueSize " + Configuration.getInstance().tileFileSystemMaxQueueSize;
+            Configuration.getInstance().osmdroidTileCache
 //            Configuration.getInstance().tileFileSystemCacheMaxBytes = 999999999;
 //            Configuration.getInstance().osmdroidTileCache = File("asd");
             showToast(info)
@@ -109,9 +113,17 @@ class ViewTrackFragment : Fragment() {
     private fun setMarkers(list: List<GeoPoint>) = with(binding){
         val startMarker = Marker(map)
         val finishMarker = Marker(map)
-//        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        startMarker.setAnchor(Marker.ANCHOR_CENTER-0.3f, Marker.ANCHOR_CENTER-0.34f)
         finishMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        startMarker.icon = getDrawable(requireContext(), R.drawable.ic_start_position)
+        startMarker.icon = getDrawable(requireContext(), R.drawable.dronchik_original_38x38)
+        // какой-то баг с масштабом, масштабирую до 1-цы
+        var img = getDrawable(requireContext(), R.drawable.dronchik_original_38x38);
+        val b = (img as BitmapDrawable).bitmap
+        val sizeX = Math.round((img.getIntrinsicWidth() * 1).toFloat()).toInt()
+        val sizeY = Math.round((img.getIntrinsicHeight() * 1).toFloat()).toInt()
+        val bitmapResized = Bitmap.createScaledBitmap(b, sizeX, sizeY, false)
+        img = BitmapDrawable(requireActivity().resources, bitmapResized)
+        startMarker.icon = img
         finishMarker.icon = getDrawable(requireContext(), R.drawable.ic_finish_position)
         startMarker.position = list[0]
         finishMarker.position = list[list.size - 1]
@@ -135,6 +147,12 @@ class ViewTrackFragment : Fragment() {
         map.overlays.add(startMarker)
         map.overlays.add(finishMarker)
         marker = startMarker;
+//        val textMarker = Marker(map)
+//        textMarker.setTextIcon("asdasd")
+//        textMarker.textLabelBackgroundColor = Color.TRANSPARENT
+//        textMarker.textLabelForegroundColor = Color.RED
+//        textMarker.position= GeoPoint(55.766075, 37.684108)
+//        map.overlays.add(textMarker)
     }
     private fun getPolyline(geoPoint: String): Polyline {
         val polyline = Polyline()
